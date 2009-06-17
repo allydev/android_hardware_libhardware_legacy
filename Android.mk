@@ -31,3 +31,6 @@ endif
 LOCAL_MODULE:= libhardware_legacy
 
 include $(BUILD_SHARED_LIBRARY)
+
+# adding gpstest app makefile
+include $(LOCAL_PATH)/tests/gpstest/Android.mk
