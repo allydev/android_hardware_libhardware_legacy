@@ -26,25 +26,23 @@
  *
  */
 
-#ifndef ANDROID_HARDWARE_IWINDOWMANAGERSERVICE_H
-#define ANDROID_HARDWARE_IWINDOWMANAGERSERVICE_H
+#ifndef ANDROID_HARDWARE_ITELEPHONYSERVICE_H
+#define ANDROID_HARDWARE_ITELEPHONYSERVICE_H
 
 #include <utils/IInterface.h>
 #include <utils/String16.h>
 #include <utils/ProcessState.h>
 #include <utils/IServiceManager.h>
 
-
 namespace android {
 
-class IWindowManagerService : public IInterface
+class ITelephonyService : public IInterface
 {
 public:
-    DECLARE_META_INTERFACE(WindowManagerService);
-
-    virtual bool pressKey(int keycode,bool down) = 0;
+	DECLARE_META_INTERFACE(TelephonyService);
+	virtual bool endCurrentCall() = 0;
 };
 
 }; // namespace android
-#endif // ANDROID_HARDWARE_IWINDOWMANAGERSERVICE_H
+#endif // ANDROID_HARDWARE_ITELEPHONYSERVICE_H
 
