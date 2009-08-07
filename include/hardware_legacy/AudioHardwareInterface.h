@@ -98,6 +98,10 @@ public:
     // The audio flinger will put the output in standby and then change the parameter value.
     virtual status_t    setParameters(const String8& keyValuePairs) = 0;
     virtual String8     getParameters(const String8& keys) = 0;
+    /**
+     * Function to Open the PCM driver for rendering
+    */
+    virtual status_t   Open() { return 0; }
 };
 
 /**
