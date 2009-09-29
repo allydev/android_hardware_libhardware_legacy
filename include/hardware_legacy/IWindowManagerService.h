@@ -29,10 +29,10 @@
 #ifndef ANDROID_HARDWARE_IWINDOWMANAGERSERVICE_H
 #define ANDROID_HARDWARE_IWINDOWMANAGERSERVICE_H
 
-#include <utils/IInterface.h>
+#include <binder/IInterface.h>
 #include <utils/String16.h>
-#include <utils/ProcessState.h>
-#include <utils/IServiceManager.h>
+#include <binder/ProcessState.h>
+#include <binder/IServiceManager.h>
 
 
 namespace android {
