@@ -18,6 +18,7 @@
 #define _HARDWARE_GPS_H
 
 #include <stdint.h>
+#include "hardware_legacy/gps_ni.h"
 
 #if __cplusplus
 extern "C" {
