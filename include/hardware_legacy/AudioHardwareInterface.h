@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 The Android Open Source Project
+ * Copyright (c) 2009, Code Aurora Forum. All rights reserved
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,6 +144,10 @@ public:
       else if (format() == AudioSystem::QCELP)
       {
         return AudioSystem::popCount(channels()) * 35;
+      }
+      else if (format() == AudioSystem::AAC)
+      {
+        return  2048;
       }
       return AudioSystem::popCount(channels())*((format()==AudioSystem::PCM_16_BIT)?sizeof(int16_t):sizeof(int8_t));
     }
