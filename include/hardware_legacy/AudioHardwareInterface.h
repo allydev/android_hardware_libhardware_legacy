@@ -133,23 +133,25 @@ public:
      * return the frame size (number of bytes per sample).
      */
     uint32_t    frameSize() const {
-      if (format() == AudioSystem::AMR_NB)
-      {
-        return AudioSystem::popCount(channels()) * 32;
-      }
-      else if (format() == AudioSystem::EVRC)
-      {
-        return AudioSystem::popCount(channels()) * 23;
-      }
-      else if (format() == AudioSystem::QCELP)
-      {
-        return AudioSystem::popCount(channels()) * 35;
-      }
-      else if (format() == AudioSystem::AAC)
-      {
-        return  2048;
-      }
-      return AudioSystem::popCount(channels())*((format()==AudioSystem::PCM_16_BIT)?sizeof(int16_t):sizeof(int8_t));
+        // only mono or stereo is supported for input sources
+        uint32_t numchannels = AudioSystem::popCount(channels() & (AudioSystem::CHANNEL_IN_STEREO | AudioSystem::CHANNEL_IN_MONO));
+        if (format() == AudioSystem::AMR_NB)
+        {
+          return numchannels * 32;
+        }
+        else if (format() == AudioSystem::EVRC)
+        {
+          return numchannels * 23;
+        }
+        else if (format() == AudioSystem::QCELP)
+        {
+          return numchannels * 35;
+        }
+        else if (format() == AudioSystem::AAC)
+        {
+          return  2048;
+        }
+        return numchannels*((format()==AudioSystem::PCM_16_BIT)?sizeof(int16_t):sizeof(int8_t));
     }
 
     /** set the input gain for the audio driver. This method is for
