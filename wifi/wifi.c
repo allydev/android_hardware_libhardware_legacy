@@ -1,5 +1,6 @@
 /*
  * Copyright 2008, The Android Open Source Project
+ * Copyright (c) 2009, Code Aurora Forum. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,10 +50,12 @@ static char iface[PROPERTY_VALUE_MAX];
 // sockets is in
 
 #ifndef WIFI_DRIVER_MODULE_PATH
-#define WIFI_DRIVER_MODULE_PATH         "/system/lib/modules/wlan.ko"
+#define WIFI_SDIO_IF_DRIVER_MODULE_PATH         "/system/lib/modules/librasdioif.ko"
+#define WIFI_DRIVER_MODULE_PATH         "/system/lib/modules/libra.ko"
 #endif
 #ifndef WIFI_DRIVER_MODULE_NAME
-#define WIFI_DRIVER_MODULE_NAME         "wlan"
+#define WIFI_SDIO_IF_DRIVER_MODULE_NAME "librasdioif"
+#define WIFI_DRIVER_MODULE_NAME         "libra"
 #endif
 #ifndef WIFI_DRIVER_MODULE_ARG
 #define WIFI_DRIVER_MODULE_ARG          ""
@@ -60,12 +63,14 @@ static char iface[PROPERTY_VALUE_MAX];
 #ifndef WIFI_FIRMWARE_LOADER
 #define WIFI_FIRMWARE_LOADER		""
 #endif
-#define WIFI_TEST_INTERFACE		"sta"
+#define WIFI_TEST_INTERFACE		"wlan0"
 
-static const char IFACE_DIR[]           = "/data/system/wpa_supplicant";
+static const char IFACE_DIR[]           = "/data/misc/wifi/wpa_supplicant";
 static const char DRIVER_MODULE_NAME[]  = WIFI_DRIVER_MODULE_NAME;
+static const char DRIVER_SDIO_IF_MODULE_NAME[]  = WIFI_SDIO_IF_DRIVER_MODULE_NAME;
 static const char DRIVER_MODULE_TAG[]   = WIFI_DRIVER_MODULE_NAME " ";
 static const char DRIVER_MODULE_PATH[]  = WIFI_DRIVER_MODULE_PATH;
+static const char DRIVER_SDIO_IF_MODULE_PATH[]  = WIFI_SDIO_IF_DRIVER_MODULE_PATH;
 static const char DRIVER_MODULE_ARG[]   = WIFI_DRIVER_MODULE_ARG;
 static const char FIRMWARE_LOADER[]     = WIFI_FIRMWARE_LOADER;
 static const char DRIVER_PROP_NAME[]    = "wlan.driver.status";
@@ -173,8 +178,13 @@ int wifi_load_driver()
         return 0;
     }
 
-    if (insmod(DRIVER_MODULE_PATH, DRIVER_MODULE_ARG) < 0)
+    if (insmod(DRIVER_SDIO_IF_MODULE_PATH, DRIVER_MODULE_ARG) < 0)
         return -1;
+
+    if (insmod(DRIVER_MODULE_PATH, DRIVER_MODULE_ARG) < 0) {
+        rmmod(DRIVER_SDIO_IF_MODULE_NAME);
+        return -1;
+    }
 
     if (strcmp(FIRMWARE_LOADER,"") == 0) {
         usleep(500000);
@@ -211,7 +221,17 @@ int wifi_unload_driver()
     	    usleep(500000);
 	}
 	if (count) {
-    	    return 0;
+            count = 20;
+            if (rmmod(DRIVER_SDIO_IF_MODULE_NAME) == 0) {
+                while (count-- > 0) {
+	            if (!check_driver_loaded())
+		        break;
+                    usleep(500000);
+	        }
+            }
+            if(count) {
+                return 0;
+	    }
 	}
 	return -1;
     } else
