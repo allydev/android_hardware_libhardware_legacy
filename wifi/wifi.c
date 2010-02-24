@@ -79,6 +79,8 @@ static const char SUPP_PROP_NAME[]      = "init.svc.wpa_supplicant";
 static const char SUPP_CONFIG_TEMPLATE[]= "/system/etc/wifi/wpa_supplicant.conf";
 static const char SUPP_CONFIG_FILE[]    = "/data/misc/wifi/wpa_supplicant.conf";
 static const char MODULE_FILE[]         = "/proc/modules";
+static const char SDIO_POLLING_ON[]     = "/etc/init.qcom.sdio.sh 1";
+static const char SDIO_POLLING_OFF[]    = "/etc/init.qcom.sdio.sh 0";
 
 static int insmod(const char *filename, const char *args)
 {
@@ -173,17 +175,21 @@ int wifi_load_driver()
 {
     char driver_status[PROPERTY_VALUE_MAX];
     int count = 100; /* wait at most 20 seconds for completion */
+    int status = -1;
 
     if (check_driver_loaded()) {
         return 0;
     }
 
+    if(system(SDIO_POLLING_ON))
+        LOGW("Couldn't turn on SDIO polling: %s", SDIO_POLLING_ON);
+
     if (insmod(DRIVER_SDIO_IF_MODULE_PATH, DRIVER_MODULE_ARG) < 0)
-        return -1;
+        goto end;
 
     if (insmod(DRIVER_MODULE_PATH, DRIVER_MODULE_ARG) < 0) {
         rmmod(DRIVER_SDIO_IF_MODULE_NAME);
-        return -1;
+        goto end;
     }
 
     if (strcmp(FIRMWARE_LOADER,"") == 0) {
@@ -196,18 +202,23 @@ int wifi_load_driver()
     sched_yield();
     while (count-- > 0) {
         if (property_get(DRIVER_PROP_NAME, driver_status, NULL)) {
-            if (strcmp(driver_status, "ok") == 0)
-                return 0;
+            if (strcmp(driver_status, "ok") == 0) {
+                status = 0;
+                goto end;
+            }
             else if (strcmp(DRIVER_PROP_NAME, "failed") == 0) {
                 wifi_unload_driver();
-                return -1;
+                goto end;
             }
         }
         usleep(200000);
     }
     property_set(DRIVER_PROP_NAME, "timeout");
     wifi_unload_driver();
-    return -1;
+
+end:
+    system(SDIO_POLLING_OFF);
+    return status;
 }
 
 int wifi_unload_driver()
