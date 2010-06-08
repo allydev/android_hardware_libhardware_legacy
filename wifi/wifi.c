@@ -1,6 +1,6 @@
 /*
  * Copyright 2008, The Android Open Source Project
- * Copyright (c) 2009, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2009-2010, Code Aurora Forum. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,10 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include <linux/if.h>
+#include <linux/wireless.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
 
 #include "hardware_legacy/wifi.h"
 #include "libwpa_client/wpa_ctrl.h"
@@ -58,12 +62,13 @@ static char iface[PROPERTY_VALUE_MAX];
 #define WIFI_DRIVER_MODULE_NAME         "libra"
 #endif
 #ifndef WIFI_DRIVER_MODULE_ARG
+#define WIFI_SDIO_IF_DRIVER_MODULE_ARG  ""
 #define WIFI_DRIVER_MODULE_ARG          ""
 #endif
 #ifndef WIFI_FIRMWARE_LOADER
-#define WIFI_FIRMWARE_LOADER		""
+#define WIFI_FIRMWARE_LOADER    ""
 #endif
-#define WIFI_TEST_INTERFACE		"wlan0"
+#define WIFI_TEST_INTERFACE     "wlan0"
 
 static const char IFACE_DIR[]           = "/data/misc/wifi/wpa_supplicant";
 static const char DRIVER_MODULE_NAME[]  = WIFI_DRIVER_MODULE_NAME;
@@ -72,6 +77,7 @@ static const char DRIVER_MODULE_TAG[]   = WIFI_DRIVER_MODULE_NAME " ";
 static const char DRIVER_MODULE_PATH[]  = WIFI_DRIVER_MODULE_PATH;
 static const char DRIVER_SDIO_IF_MODULE_PATH[]  = WIFI_SDIO_IF_DRIVER_MODULE_PATH;
 static const char DRIVER_MODULE_ARG[]   = WIFI_DRIVER_MODULE_ARG;
+static const char DRIVER_SDIO_IF_MODULE_ARG[]   = WIFI_SDIO_IF_DRIVER_MODULE_ARG;
 static const char FIRMWARE_LOADER[]     = WIFI_FIRMWARE_LOADER;
 static const char DRIVER_PROP_NAME[]    = "wlan.driver.status";
 static const char SUPPLICANT_NAME[]     = "wpa_supplicant";
@@ -184,7 +190,7 @@ int wifi_load_driver()
     if(system(SDIO_POLLING_ON))
         LOGW("Couldn't turn on SDIO polling: %s", SDIO_POLLING_ON);
 
-    if (insmod(DRIVER_SDIO_IF_MODULE_PATH, DRIVER_MODULE_ARG) < 0)
+    if (insmod(DRIVER_SDIO_IF_MODULE_PATH, DRIVER_SDIO_IF_MODULE_ARG) < 0)
         goto end;
 
     if (insmod(DRIVER_MODULE_PATH, DRIVER_MODULE_ARG) < 0) {
@@ -206,7 +212,7 @@ int wifi_load_driver()
                 status = 0;
                 goto end;
             }
-            else if (strcmp(DRIVER_PROP_NAME, "failed") == 0) {
+            else if (strcmp(driver_status, "failed") == 0) {
                 wifi_unload_driver();
                 goto end;
             }
@@ -224,28 +230,51 @@ end:
 int wifi_unload_driver()
 {
     int count = 20; /* wait at most 10 seconds for completion */
+    char driver_status[PROPERTY_VALUE_MAX];
+    int s, ret;
+    struct iwreq wrq;
+
+    /*
+     * If the driver is loaded, ask it to broadcast a netlink message
+     * that it will be closing, so listeners can close their sockets.
+     */
+
+    if (property_get(DRIVER_PROP_NAME, driver_status, NULL)) {
+        if (strcmp(driver_status, "ok") == 0) {
+
+            /* Equivalent to: iwpriv wlan0 sendModuleInd */
+            if ((s = socket(PF_INET, SOCK_DGRAM, 0)) >= 0) {
+                strncpy(wrq.ifr_name, "wlan0", IFNAMSIZ);
+                wrq.u.data.length = 0; /* No Set arguments */
+                wrq.u.mode = 5; /* WE_MODULE_DOWN_IND sub-command */
+                ret = ioctl(s, (SIOCIWFIRSTPRIV + 1), &wrq);
+                close(s);
+                if (ret < 0 ) {
+                    LOGE("ioctl failed: %s", strerror(errno));
+                }
+                sched_yield();
+            }
+            else {
+                LOGE("Socket open failed: %s", strerror(errno));
+            }
+        }
+    }
 
     if (rmmod(DRIVER_MODULE_NAME) == 0) {
-	while (count-- > 0) {
-	    if (!check_driver_loaded())
-		break;
-    	    usleep(500000);
-	}
-	if (count) {
-            count = 20;
+        while (count-- > 0) {
+            if (!check_driver_loaded())
+                break;
+            usleep(500000);
+        }
+        if (count) {
             if (rmmod(DRIVER_SDIO_IF_MODULE_NAME) == 0) {
-                while (count-- > 0) {
-	            if (!check_driver_loaded())
-		        break;
-                    usleep(500000);
-	        }
-            }
-            if(count) {
                 return 0;
-	    }
-	}
-	return -1;
-    } else
+            }
+        }
+
+        return -1;
+    }
+    else
         return -1;
 }
 
