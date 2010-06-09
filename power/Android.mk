@@ -2,6 +2,9 @@
 
 LOCAL_SRC_FILES += power/power.c
 
+ifeq ($(TARGET_BOARD_PLATFORM),msm8660)
+  LOCAL_CFLAGS	  += -DDUMMY_WAKE_LOCKS=1
+endif
 ifeq ($(QEMU_HARDWARE),true)
   LOCAL_SRC_FILES += power/power_qemu.c
   LOCAL_CFLAGS    += -DQEMU_POWER=1
