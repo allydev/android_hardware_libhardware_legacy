@@ -26,36 +26,6 @@
  *
  */
 
-/*!
-  @file
-  IWindowManagerService.cpp
-
-  @brief
-  Exposes the stub for Android's WindowManager Service
-
-*/
-
-/*===========================================================================
-
-                        EDIT HISTORY FOR MODULE
-
-This section contains comments describing changes made to the module.
-Notice that changes are listed in reverse chronological order.
-
-
-when       who     what, where, why
---------   ---     ----------------------------------------------------------
-04/10/09   avellore      First cut.
-
-
-===========================================================================*/
-
-/*===========================================================================
-
-                           INCLUDE FILES
-
-===========================================================================*/
-
 #include <stdint.h>
 #include <sys/types.h>
 #include <utils/Parcel.h>
@@ -128,3 +98,4 @@ public:
 IMPLEMENT_META_INTERFACE(WindowManagerService, "android.view.IWindowManager")
 
 };  // namespace android
+

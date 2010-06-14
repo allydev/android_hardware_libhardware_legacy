@@ -26,25 +26,42 @@
  *
  */
 
-#ifndef ANDROID_HARDWARE_IWINDOWMANAGERSERVICE_H
-#define ANDROID_HARDWARE_IWINDOWMANAGERSERVICE_H
-
-#include <utils/IInterface.h>
-#include <utils/String16.h>
-#include <utils/ProcessState.h>
+#include <stdint.h>
+#include <sys/types.h>
+#include <utils/Parcel.h>
+#include <utils/IPCThreadState.h>
 #include <utils/IServiceManager.h>
-
+#include <utils/String16.h>
+#include <hardware_legacy/ITelephonyService.h>
+#include <sys/time.h>
 
 namespace android {
 
-class IWindowManagerService : public IInterface
-{
-public:
-    DECLARE_META_INTERFACE(WindowManagerService);
+/* Specifies the function id that has to be remotely invoked */
 
-    virtual bool pressKey(int keycode,bool down) = 0;
+enum {
+	endCall = IBinder::FIRST_CALL_TRANSACTION + 4,
 };
 
-}; // namespace android
-#endif // ANDROID_HARDWARE_IWINDOWMANAGERSERVICE_H
+/* Stub class for Telephony service */
 
+class BpTelephonyService : public BpInterface<ITelephonyService>
+{
+
+public:
+	BpTelephonyService(const sp<IBinder>& impl): BpInterface<ITelephonyService>(impl)
+	{
+	}
+
+    virtual bool endCurrentCall() {
+    	Parcel data, reply;
+	    data.writeInterfaceToken(ITelephonyService::getInterfaceDescriptor());
+    	remote()->transact(endCall, data, &reply);  //RPC call
+    	reply.readInt32();          //Deserialize the exception response
+    	return reply.readInt32();   //returns 1 if success
+    }
+};
+
+IMPLEMENT_META_INTERFACE(TelephonyService, "com.android.internal.telephony.ITelephony")
+
+};
