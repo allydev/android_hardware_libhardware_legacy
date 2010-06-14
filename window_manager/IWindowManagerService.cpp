@@ -28,9 +28,9 @@
 
 #include <stdint.h>
 #include <sys/types.h>
-#include <utils/Parcel.h>
-#include <utils/IPCThreadState.h>
-#include <utils/IServiceManager.h>
+#include <binder/Parcel.h>
+#include <binder/IPCThreadState.h>
+#include <binder/IServiceManager.h>
 #include <utils/String16.h>
 #include <hardware_legacy/IWindowManagerService.h>
 #include <sys/time.h>
